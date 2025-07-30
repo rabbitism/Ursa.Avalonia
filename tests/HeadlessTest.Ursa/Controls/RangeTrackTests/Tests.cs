@@ -500,4 +500,166 @@ public class Tests
         Assert.True(rangeTrack.UpperValue >= 120.0);
         Assert.True(rangeTrack.LowerValue <= rangeTrack.UpperValue);
     }
+
+    [AvaloniaFact]
+    public void RangeTrack_Should_Not_Raise_ValueChanged_Event_When_Unsubscribed()
+    {
+        var rangeTrack = new RangeTrack();
+        var window = new Window();
+        window.Content = rangeTrack;
+        window.Show();
+        
+        // Set up the range first
+        rangeTrack.Minimum = 0.0;
+        rangeTrack.Maximum = 100.0;
+        rangeTrack.LowerValue = 25.0;
+        rangeTrack.UpperValue = 75.0;
+        
+        var eventRaised = false;
+        EventHandler<RangeValueChangedEventArgs> handler = (sender, e) => eventRaised = true;
+        
+        // Subscribe to the event and test that it gets raised
+        rangeTrack.ValueChanged += handler;
+        rangeTrack.LowerValue = 30.0;
+        Assert.True(eventRaised);
+        
+        // Reset flag and unsubscribe
+        eventRaised = false;
+        rangeTrack.ValueChanged -= handler;
+        
+        // Change value again - event should NOT be raised
+        rangeTrack.LowerValue = 35.0;
+        Assert.False(eventRaised);
+        
+        // Test the same with UpperValue
+        eventRaised = false;
+        rangeTrack.ValueChanged += handler;
+        rangeTrack.UpperValue = 80.0;
+        Assert.True(eventRaised);
+        
+        // Unsubscribe and verify event is not raised
+        eventRaised = false;
+        rangeTrack.ValueChanged -= handler;
+        rangeTrack.UpperValue = 85.0;
+        Assert.False(eventRaised);
+    }
+
+    [AvaloniaFact]
+    public void RangeTrack_Should_Measure_And_Arrange_Correctly_When_Vertical()
+    {
+        var rangeTrack = new RangeTrack();
+        var window = new Window { Width = 100, Height = 300 };
+        window.Content = rangeTrack;
+        window.Show();
+        
+        // Set up vertical orientation
+        rangeTrack.Orientation = Orientation.Vertical;
+        rangeTrack.Minimum = 0.0;
+        rangeTrack.Maximum = 100.0;
+        rangeTrack.LowerValue = 25.0;
+        rangeTrack.UpperValue = 75.0;
+        
+        // Create thumbs and sections for testing
+        var lowerThumb = new Thumb { Width = 20, Height = 20 };
+        var upperThumb = new Thumb { Width = 20, Height = 20 };
+        var lowerSection = new Border { Name = "LowerSection" };
+        var innerSection = new Border { Name = "InnerSection" };
+        var upperSection = new Border { Name = "UpperSection" };
+        
+        rangeTrack.LowerThumb = lowerThumb;
+        rangeTrack.UpperThumb = upperThumb;
+        rangeTrack.LowerSection = lowerSection;
+        rangeTrack.InnerSection = innerSection;
+        rangeTrack.UpperSection = upperSection;
+        
+        // Test MeasureOverride for vertical orientation
+        rangeTrack.Measure(new Size(100, 300));
+        var desiredSize = rangeTrack.DesiredSize;
+        
+        // In vertical mode, width should be max of thumbs, height should be sum
+        Assert.Equal(Math.Max(lowerThumb.DesiredSize.Width, upperThumb.DesiredSize.Width), desiredSize.Width);
+        Assert.Equal(lowerThumb.DesiredSize.Height + upperThumb.DesiredSize.Height, desiredSize.Height);
+        
+        // Test ArrangeOverride for vertical orientation
+        var arrangeSize = new Size(100, 300);
+        rangeTrack.Arrange(new Rect(0, 0, arrangeSize.Width, arrangeSize.Height));
+        
+        // Verify that sections and thumbs have been arranged (they should have non-negative bounds)
+        Assert.True(lowerSection.Bounds.Height >= 0);
+        Assert.True(innerSection.Bounds.Height >= 0);
+        Assert.True(upperSection.Bounds.Height >= 0);
+        Assert.True(lowerThumb.Bounds.Height >= 0);
+        Assert.True(upperThumb.Bounds.Height >= 0);
+        
+        // The total height of all sections should be reasonable (not more than the container)
+        var totalSectionHeight = lowerSection.Bounds.Height + innerSection.Bounds.Height + upperSection.Bounds.Height;
+        Assert.True(totalSectionHeight <= arrangeSize.Height);
+        
+        // In vertical orientation, sections should have the same width as the container
+        Assert.Equal(arrangeSize.Width, lowerSection.Bounds.Width);
+        Assert.Equal(arrangeSize.Width, innerSection.Bounds.Width);
+        Assert.Equal(arrangeSize.Width, upperSection.Bounds.Width);
+        
+        // Thumbs may maintain their own desired width, so let's check they're within reasonable bounds
+        Assert.True(lowerThumb.Bounds.Width > 0);
+        Assert.True(upperThumb.Bounds.Width > 0);
+        Assert.True(lowerThumb.Bounds.Width <= arrangeSize.Width);
+        Assert.True(upperThumb.Bounds.Width <= arrangeSize.Width);
+        
+        // Verify that at least one section has non-zero height (since we have a range)
+        Assert.True(totalSectionHeight > 0);
+    }
+
+    [AvaloniaFact]
+    public void RangeTrack_GetRatioByPoint_Should_Work_When_Vertical()
+    {
+        var rangeTrack = new RangeTrack();
+        var window = new Window { Width = 100, Height = 300 };
+        window.Content = rangeTrack;
+        window.Show();
+        
+        rangeTrack.Minimum = 0.0;
+        rangeTrack.Maximum = 100.0;
+        rangeTrack.LowerValue = 25.0;
+        rangeTrack.UpperValue = 75.0;
+        rangeTrack.Orientation = Orientation.Vertical;
+        rangeTrack.IsDirectionReversed = false; // Normal vertical mode
+        
+        // Create sections and thumbs for GetRatioByPoint calculation
+        rangeTrack.LowerSection = new Border { Height = 75 };
+        rangeTrack.InnerSection = new Border { Height = 150 };
+        rangeTrack.UpperSection = new Border { Height = 75 };
+        rangeTrack.LowerThumb = new Thumb { Height = 20 };
+        rangeTrack.UpperThumb = new Thumb { Height = 20 };
+        
+        rangeTrack.Arrange(new Rect(0, 0, 100, 300));
+        
+        // Test various positions in vertical mode
+        var ratioTop = rangeTrack.GetRatioByPoint(0);     // Top of track
+        var ratioMiddle = rangeTrack.GetRatioByPoint(150); // Middle of track
+        var ratioBottom = rangeTrack.GetRatioByPoint(300); // Bottom of track
+        
+        // All ratios should be valid (between 0 and 1)
+        Assert.True(ratioTop >= 0.0 && ratioTop <= 1.0);
+        Assert.True(ratioMiddle >= 0.0 && ratioMiddle <= 1.0);
+        Assert.True(ratioBottom >= 0.0 && ratioBottom <= 1.0);
+        
+        // In normal vertical mode (not reversed), top should give higher ratio than bottom
+        // This is because vertical orientation typically has 0 at top, max at bottom
+        // but the ratio calculation inverts this
+        Assert.True(ratioTop >= ratioBottom);
+        
+        // Test with direction reversed
+        rangeTrack.IsDirectionReversed = true;
+        rangeTrack.Arrange(new Rect(0, 0, 100, 300));
+        
+        var ratioTopReversed = rangeTrack.GetRatioByPoint(0);
+        var ratioBottomReversed = rangeTrack.GetRatioByPoint(300);
+        
+        Assert.True(ratioTopReversed >= 0.0 && ratioTopReversed <= 1.0);
+        Assert.True(ratioBottomReversed >= 0.0 && ratioBottomReversed <= 1.0);
+        
+        // In reversed vertical mode, the ratio behavior should be different
+        Assert.True(ratioBottomReversed >= ratioTopReversed);
+    }
 }
