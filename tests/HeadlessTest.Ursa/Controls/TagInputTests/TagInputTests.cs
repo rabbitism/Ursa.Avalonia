@@ -3,6 +3,8 @@ using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using UrsaControls = Ursa.Controls;
 
 namespace HeadlessTest.Ursa.Controls.TagInputTests;
@@ -493,5 +495,43 @@ public class TagInputTests
         // Assert
         Assert.Single(tagInput.Items); // Only TextBox should remain
         Assert.IsType<TextBox>(tagInput.Items[0]);
+    }
+
+    [AvaloniaFact]
+    public void TagInput_Should_Remove_Tag_When_ClosableTag_Command_Triggered()
+    {
+        // Arrange
+        var window = new Window();
+        var tagInput = new UrsaControls.TagInput();
+        window.Content = tagInput;
+        window.Show();
+
+        // Add some tags
+        tagInput.Tags.Add("tag1");
+        tagInput.Tags.Add("tag2");
+        tagInput.Tags.Add("tag3");
+
+        // Ensure template is applied
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal(3, tagInput.Tags.Count);
+        Assert.Equal(4, tagInput.Items.Count); // 3 tags + 1 textbox
+
+        // Act - Find the first ClosableTag and trigger its Close command
+        var closableTag = tagInput.GetVisualDescendants().OfType<UrsaControls.ClosableTag>().FirstOrDefault();
+        Assert.NotNull(closableTag);
+        
+        // The ClosableTag's Command should be bound to TagInput.Close method
+        var command = closableTag.Command;
+        Assert.NotNull(command);
+        
+        // Execute the command with the ClosableTag as parameter (as defined in the template)
+        command.Execute(closableTag);
+
+        // Assert - The first tag should be removed
+        Assert.Equal(2, tagInput.Tags.Count);
+        Assert.Equal(3, tagInput.Items.Count); // 2 tags + 1 textbox
+        Assert.Equal("tag2", tagInput.Tags[0]);
+        Assert.Equal("tag3", tagInput.Tags[1]);
     }
 }
