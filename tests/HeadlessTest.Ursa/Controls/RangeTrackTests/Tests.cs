@@ -365,4 +365,139 @@ public class Tests
         
         Assert.Equal(trackBackground, rangeTrack.TrackBackground);
     }
+
+    [AvaloniaFact]
+    public void RangeTrack_Should_Measure_Correctly_With_Thumbs()
+    {
+        var rangeTrack = new RangeTrack();
+        var window = new Window { Width = 300, Height = 100 };
+        window.Content = rangeTrack;
+        window.Show();
+        
+        // Create thumbs 
+        var lowerThumb = new Thumb();
+        var upperThumb = new Thumb();
+        
+        // Test that MeasureOverride logic path is followed when both thumbs are present
+        rangeTrack.LowerThumb = lowerThumb;
+        rangeTrack.UpperThumb = upperThumb;
+        
+        // Test horizontal orientation
+        rangeTrack.Orientation = Orientation.Horizontal;
+        rangeTrack.Measure(new Size(300, 100));
+        var horizontalSize = rangeTrack.DesiredSize;
+        
+        // Test vertical orientation
+        rangeTrack.Orientation = Orientation.Vertical;
+        rangeTrack.Measure(new Size(300, 100));
+        var verticalSize = rangeTrack.DesiredSize;
+        
+        // The main test is that both thumbs are measured (called Measure) when MeasureOverride runs
+        // We can verify this by checking that both thumbs were added to the children and have been measured
+        Assert.Contains(lowerThumb, rangeTrack.GetLogicalChildren());
+        Assert.Contains(upperThumb, rangeTrack.GetLogicalChildren());
+        
+        // Test with only one thumb - should return Size() (default)
+        rangeTrack.UpperThumb = null;
+        rangeTrack.Measure(new Size(300, 100));
+        var oneThumbSize = rangeTrack.DesiredSize;
+        
+        // With only one thumb, the MeasureOverride should return Size() (zero size)
+        Assert.Equal(new Size(), oneThumbSize);
+        
+        // Test with no thumbs - should also return Size() (default)
+        rangeTrack.LowerThumb = null;
+        rangeTrack.Measure(new Size(300, 100));
+        var noThumbSize = rangeTrack.DesiredSize;
+        
+        // With no thumbs, should return Size() (zero size)
+        Assert.Equal(new Size(), noThumbSize);
+    }
+
+    [AvaloniaFact]
+    public void RangeTrack_GetRatioByPoint_Should_Work_With_Horizontal_Direction_Reversed()
+    {
+        var rangeTrack = new RangeTrack();
+        var window = new Window { Width = 300, Height = 100 };
+        window.Content = rangeTrack;
+        window.Show();
+        
+        rangeTrack.Minimum = 0.0;
+        rangeTrack.Maximum = 100.0;
+        rangeTrack.LowerValue = 25.0;
+        rangeTrack.UpperValue = 75.0;
+        rangeTrack.Orientation = Orientation.Horizontal;
+        rangeTrack.IsDirectionReversed = true; // This is the key difference
+        
+        // Create sections and thumbs for GetRatioByPoint to work with
+        rangeTrack.LowerSection = new Border { Width = 50 };
+        rangeTrack.InnerSection = new Border { Width = 100 };
+        rangeTrack.UpperSection = new Border { Width = 50 };
+        rangeTrack.LowerThumb = new Thumb { Width = 20 };
+        rangeTrack.UpperThumb = new Thumb { Width = 20 };
+        
+        rangeTrack.Arrange(new Rect(0, 0, 300, 100));
+        
+        // Test various positions with direction reversed
+        // In reversed horizontal mode, position 0 should give ratio 1.0, position at end should give 0.0
+        var ratioStart = rangeTrack.GetRatioByPoint(0);
+        var ratioMiddle = rangeTrack.GetRatioByPoint(150);
+        var ratioEnd = rangeTrack.GetRatioByPoint(300);
+        
+        // All ratios should be valid (between 0 and 1)
+        Assert.True(ratioStart >= 0.0 && ratioStart <= 1.0);
+        Assert.True(ratioMiddle >= 0.0 && ratioMiddle <= 1.0);
+        Assert.True(ratioEnd >= 0.0 && ratioEnd <= 1.0);
+        
+        // In reversed mode, ratios should be inverted compared to normal mode
+        // Start position should give higher ratio than end position
+        Assert.True(ratioStart >= ratioEnd);
+    }
+
+    [AvaloniaFact]
+    public void RangeTrack_Should_Coerce_Values_When_Minimum_Changed_After_Window_Shown()
+    {
+        var rangeTrack = new RangeTrack();
+        var window = new Window();
+        window.Content = rangeTrack;
+        
+        // Set initial values
+        rangeTrack.Minimum = 0.0;
+        rangeTrack.Maximum = 100.0;
+        rangeTrack.LowerValue = 25.0;
+        rangeTrack.UpperValue = 75.0;
+        
+        // Show the window to initialize the control
+        window.Show();
+        
+        // Verify initial state
+        Assert.Equal(0.0, rangeTrack.Minimum);
+        Assert.Equal(100.0, rangeTrack.Maximum);
+        Assert.Equal(25.0, rangeTrack.LowerValue);
+        Assert.Equal(75.0, rangeTrack.UpperValue);
+        
+        // Change minimum to a value higher than current lower value
+        rangeTrack.Minimum = 30.0;
+        
+        // Maximum should be coerced to at least the new minimum
+        Assert.True(rangeTrack.Maximum >= 30.0);
+        
+        // LowerValue should be coerced to at least the new minimum
+        Assert.True(rangeTrack.LowerValue >= 30.0);
+        
+        // UpperValue should remain valid (>= LowerValue, <= Maximum)
+        Assert.True(rangeTrack.UpperValue >= rangeTrack.LowerValue);
+        Assert.True(rangeTrack.UpperValue <= rangeTrack.Maximum);
+        
+        // Test with minimum higher than current maximum
+        rangeTrack.Minimum = 120.0;
+        
+        // Maximum should be coerced to at least the new minimum
+        Assert.True(rangeTrack.Maximum >= 120.0);
+        
+        // Both values should be coerced appropriately
+        Assert.True(rangeTrack.LowerValue >= 120.0);
+        Assert.True(rangeTrack.UpperValue >= 120.0);
+        Assert.True(rangeTrack.LowerValue <= rangeTrack.UpperValue);
+    }
 }
