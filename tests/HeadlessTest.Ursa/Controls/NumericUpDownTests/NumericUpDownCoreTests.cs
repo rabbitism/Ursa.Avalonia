@@ -336,7 +336,7 @@ public class NumericUpDownCoreTests
         Assert.NotNull(numericUpDown.NumberFormat);
     }
 
-    [Theory]
+    [AvaloniaTheory]
     [InlineData(typeof(NumericIntUpDown))]
     [InlineData(typeof(NumericUIntUpDown))]
     [InlineData(typeof(NumericDoubleUpDown))]
@@ -363,7 +363,7 @@ public class NumericUpDownCoreTests
         Assert.True(true);
     }
 
-    [Theory]
+    [AvaloniaTheory]
     [InlineData(typeof(NumericIntUpDown))]
     [InlineData(typeof(NumericUIntUpDown))]
     [InlineData(typeof(NumericDoubleUpDown))]

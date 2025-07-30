@@ -411,7 +411,7 @@ public class NumericUpDownTypesTests
     #endregion
 
     #region Cross-Type Validation Tests
-    [Theory]
+    [AvaloniaTheory]
     [InlineData(typeof(NumericIntUpDown))]
     [InlineData(typeof(NumericUIntUpDown))]
     [InlineData(typeof(NumericDoubleUpDown))]
@@ -470,7 +470,7 @@ public class NumericUpDownTypesTests
         return emptyInputValueProperty?.GetValue(numericUpDown);
     }
 
-    [Theory]
+    [AvaloniaTheory]
     [InlineData(typeof(NumericIntUpDown))]
     [InlineData(typeof(NumericUIntUpDown))]
     [InlineData(typeof(NumericDoubleUpDown))]
