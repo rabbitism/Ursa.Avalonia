@@ -5,6 +5,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Headless.XUnit;
 using Avalonia.Layout;
+using Avalonia.Threading;
 using UrsaControls = Ursa.Controls;
 
 namespace HeadlessTest.Ursa.Controls.TreeComboBoxTests;
@@ -394,6 +395,8 @@ public class TreeComboBoxTests
         window.Content = comboBox;
         window.Show();
         comboBox.ItemsSource = hierarchicalData;
+        comboBox.IsDropDownOpen = true;
+        Dispatcher.UIThread.RunJobs();
 
         // Act
         hierarchicalData.Add(new HierarchicalItem { Name = "Root2" });

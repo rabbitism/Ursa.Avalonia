@@ -7,6 +7,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Templates;
 using Avalonia.Headless.XUnit;
+using Avalonia.Threading;
 using UrsaControls = Ursa.Controls;
 
 namespace HeadlessTest.Ursa.Controls.MultiComboBoxTests;
@@ -484,6 +485,8 @@ public class MultiComboBoxTests
         comboBox.ItemsSource = itemsSource;
         comboBox.SelectedItems?.Add("Option1");
         comboBox.SelectedItems?.Add("Option3");
+        comboBox.IsDropDownOpen = true;
+        Dispatcher.UIThread.RunJobs();
 
         // Assert
         Assert.Equal(4, comboBox.Items.Count);
