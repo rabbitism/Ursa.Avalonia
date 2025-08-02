@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
@@ -325,5 +327,233 @@ public class TreeComboBoxTests
 
         // Assert
         Assert.Null(selectionBoxItem); // Initially null
+    }
+
+    [AvaloniaFact]
+    public void TreeComboBox_Should_Support_Hierarchical_ItemsSource()
+    {
+        // Arrange
+        var window = new Window();
+        var comboBox = new UrsaControls.TreeComboBox();
+        var hierarchicalData = new List<HierarchicalItem>
+        {
+            new HierarchicalItem 
+            { 
+                Name = "Root1", 
+                Children = new List<HierarchicalItem>
+                {
+                    new HierarchicalItem { Name = "Child1.1" },
+                    new HierarchicalItem { Name = "Child1.2" }
+                }
+            },
+            new HierarchicalItem 
+            { 
+                Name = "Root2", 
+                Children = new List<HierarchicalItem>
+                {
+                    new HierarchicalItem { Name = "Child2.1" },
+                    new HierarchicalItem 
+                    { 
+                        Name = "Child2.2",
+                        Children = new List<HierarchicalItem>
+                        {
+                            new HierarchicalItem { Name = "GrandChild2.2.1" }
+                        }
+                    }
+                }
+            }
+        };
+        window.Content = comboBox;
+        window.Show();
+
+        // Act
+        comboBox.ItemsSource = hierarchicalData;
+
+        // Assert
+        Assert.Equal(hierarchicalData, comboBox.ItemsSource);
+        Assert.Equal(2, comboBox.Items.Count);
+    }
+
+    [AvaloniaFact]
+    public void TreeComboBox_Should_Update_With_Observable_Hierarchical_ItemsSource()
+    {
+        // Arrange
+        var window = new Window();
+        var comboBox = new UrsaControls.TreeComboBox();
+        var hierarchicalData = new ObservableCollection<HierarchicalItem>
+        {
+            new HierarchicalItem 
+            { 
+                Name = "Root1", 
+                Children = new List<HierarchicalItem>
+                {
+                    new HierarchicalItem { Name = "Child1.1" }
+                }
+            }
+        };
+        window.Content = comboBox;
+        window.Show();
+        comboBox.ItemsSource = hierarchicalData;
+
+        // Act
+        hierarchicalData.Add(new HierarchicalItem { Name = "Root2" });
+
+        // Assert
+        Assert.Equal(2, comboBox.Items.Count);
+    }
+
+    [AvaloniaFact]
+    public void TreeComboBox_Should_Clear_SelectedItem_Via_Clear_Method()
+    {
+        // Arrange
+        var window = new Window();
+        var comboBox = new UrsaControls.TreeComboBox();
+        window.Content = comboBox;
+        window.Show();
+
+        comboBox.SelectedItem = "Test Item";
+
+        // Act
+        comboBox.Clear();
+
+        // Assert
+        Assert.Null(comboBox.SelectedItem);
+    }
+
+    [AvaloniaFact]
+    public void TreeComboBox_Should_Clear_When_SelectedItem_Is_Already_Null()
+    {
+        // Arrange
+        var window = new Window();
+        var comboBox = new UrsaControls.TreeComboBox();
+        window.Content = comboBox;
+        window.Show();
+
+        // Act & Assert - Should not throw
+        comboBox.Clear();
+        Assert.Null(comboBox.SelectedItem);
+    }
+
+    [AvaloniaFact]
+    public void TreeComboBox_Should_Handle_Complex_Hierarchical_Objects()
+    {
+        // Arrange
+        var window = new Window();
+        var comboBox = new UrsaControls.TreeComboBox();
+        var complexHierarchy = new List<ComplexHierarchicalItem>
+        {
+            new ComplexHierarchicalItem 
+            { 
+                Id = 1,
+                Title = "Department A", 
+                Type = "Department",
+                SubItems = new List<ComplexHierarchicalItem>
+                {
+                    new ComplexHierarchicalItem { Id = 11, Title = "Team 1", Type = "Team" },
+                    new ComplexHierarchicalItem { Id = 12, Title = "Team 2", Type = "Team" }
+                }
+            }
+        };
+        window.Content = comboBox;
+        window.Show();
+
+        // Act
+        comboBox.ItemsSource = complexHierarchy;
+
+        // Assert
+        Assert.Equal(complexHierarchy, comboBox.ItemsSource);
+        Assert.Single(comboBox.Items);
+    }
+
+    [AvaloniaFact]
+    public void TreeComboBox_Should_Implement_IClearControl()
+    {
+        // Arrange & Act
+        var comboBox = new UrsaControls.TreeComboBox();
+
+        // Assert
+        Assert.IsAssignableFrom<Irihi.Avalonia.Shared.Contracts.IClearControl>(comboBox);
+    }
+
+    [AvaloniaFact]
+    public void TreeComboBox_Should_Handle_Mixed_ItemsSource_Types()
+    {
+        // Arrange
+        var window = new Window();
+        var comboBox = new UrsaControls.TreeComboBox();
+        var mixedData = new List<object>
+        {
+            "Simple String",
+            new HierarchicalItem 
+            { 
+                Name = "Complex Item",
+                Children = new List<HierarchicalItem>
+                {
+                    new HierarchicalItem { Name = "Child" }
+                }
+            },
+            42
+        };
+        window.Content = comboBox;
+        window.Show();
+
+        // Act
+        comboBox.ItemsSource = mixedData;
+
+        // Assert
+        Assert.Equal(mixedData, comboBox.ItemsSource);
+        Assert.Equal(3, comboBox.Items.Count);
+    }
+
+    [AvaloniaFact]
+    public void TreeComboBox_Should_Clear_And_Select_New_Item()
+    {
+        // Arrange
+        var window = new Window();
+        var comboBox = new UrsaControls.TreeComboBox();
+        window.Content = comboBox;
+        window.Show();
+
+        comboBox.SelectedItem = "First Item";
+
+        // Act
+        comboBox.Clear();
+        comboBox.SelectedItem = "Second Item";
+
+        // Assert
+        Assert.Equal("Second Item", comboBox.SelectedItem);
+    }
+
+    [AvaloniaFact]
+    public void TreeComboBox_Should_Handle_Empty_Hierarchical_ItemsSource()
+    {
+        // Arrange
+        var window = new Window();
+        var comboBox = new UrsaControls.TreeComboBox();
+        var emptyHierarchicalData = new List<HierarchicalItem>();
+        window.Content = comboBox;
+        window.Show();
+
+        // Act
+        comboBox.ItemsSource = emptyHierarchicalData;
+
+        // Assert
+        Assert.Equal(emptyHierarchicalData, comboBox.ItemsSource);
+        Assert.Empty(comboBox.Items);
+    }
+
+    // Helper classes for hierarchical testing
+    private class HierarchicalItem
+    {
+        public string Name { get; set; } = "";
+        public List<HierarchicalItem>? Children { get; set; }
+    }
+
+    private class ComplexHierarchicalItem
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = "";
+        public string Type { get; set; } = "";
+        public List<ComplexHierarchicalItem>? SubItems { get; set; }
     }
 }
