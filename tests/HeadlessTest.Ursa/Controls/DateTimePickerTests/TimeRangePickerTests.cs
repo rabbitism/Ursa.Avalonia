@@ -276,4 +276,59 @@ public class TimeRangePickerTests
         Assert.Equal(59, picker.EndTime.Value.Minutes);
         Assert.Equal(59, picker.EndTime.Value.Seconds);
     }
+
+    [AvaloniaFact]
+    public void TimeRangePicker_Should_Convert_Text_To_Valid_Times_On_Enter()
+    {
+        var window = new Window();
+        var picker = new TimeRangePicker
+        {
+            Width = 400,
+            Height = 50,
+            DisplayFormat = "HH:mm"
+        };
+        window.Content = picker;
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        
+        var startTextBox = picker.GetTemplateChildOfType<TextBox>(TimeRangePicker.PART_StartTextBox);
+        var endTextBox = picker.GetTemplateChildOfType<TextBox>(TimeRangePicker.PART_EndTextBox);
+        Assert.NotNull(startTextBox);
+        Assert.NotNull(endTextBox);
+        
+        // Set text values in the textboxes
+        startTextBox.Text = "09:30";
+        endTextBox.Text = "17:45";
+        Dispatcher.UIThread.RunJobs();
+        
+        // Initially, the TimeSpan properties might not be set until Enter is pressed
+        // Focus the control to ensure it can receive key events
+        picker.Focus();
+        Dispatcher.UIThread.RunJobs();
+        
+        // Press Enter to commit the input
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        
+        // Verify that the text was converted to valid TimeSpan values
+        Assert.NotNull(picker.StartTime);
+        Assert.NotNull(picker.EndTime);
+        Assert.Equal(new TimeSpan(9, 30, 0), picker.StartTime);
+        Assert.Equal(new TimeSpan(17, 45, 0), picker.EndTime);
+        
+        // Test with invalid input to ensure it handles errors gracefully
+        startTextBox.Text = "invalid";
+        endTextBox.Text = "25:99"; // Invalid time
+        Dispatcher.UIThread.RunJobs();
+        
+        // Press Enter again
+        window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
+        Dispatcher.UIThread.RunJobs();
+        
+        // Invalid input should result in null values and cleared textboxes
+        Assert.Null(picker.StartTime);
+        Assert.Null(picker.EndTime);
+        Assert.True(string.IsNullOrEmpty(startTextBox.Text));
+        Assert.True(string.IsNullOrEmpty(endTextBox.Text));
+    }
 }

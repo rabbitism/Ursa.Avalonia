@@ -258,6 +258,41 @@ public class SelectionListTests
         Assert.NotNull(list);
     }
 
+    [AvaloniaFact]
+    public void SelectionList_Should_Handle_SelectedItem_Set_Before_Loaded()
+    {
+        var window = new Window();
+        var items = new List<string> { "Item 1", "Item 2", "Item 3" };
+        var indicator = new Border { Background = Avalonia.Media.Brushes.Red };
+        var list = new SelectionList
+        {
+            ItemsSource = items,
+            Indicator = indicator,
+            SelectedItem = "Item 2" // Set selected item before loading
+        };
+        
+        // At this point, the control is not loaded yet
+        Assert.Equal("Item 2", list.SelectedItem);
+        
+        window.Content = list;
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        
+        // After loading, the selected item should still be correct
+        Assert.Equal("Item 2", list.SelectedItem);
+        Assert.Equal(1, list.SelectedIndex);
+        
+        // The indicator should be visible and properly positioned
+        var indicatorPresenter = list.GetTemplateChildOfType<ContentPresenter>(SelectionList.PART_Indicator);
+        Assert.NotNull(indicatorPresenter);
+        Assert.Equal(1, indicatorPresenter.Opacity); // Should be visible since item is selected
+        
+        // Verify that the selected container exists
+        var selectedContainer = list.ContainerFromItem("Item 2");
+        Assert.NotNull(selectedContainer);
+        Assert.IsType<SelectionListItem>(selectedContainer);
+    }
+
     private class TestItem
     {
         public int Id { get; set; }
