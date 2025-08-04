@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.VisualTree;
 using UrsaControl = Ursa.Controls;
 
 namespace HeadlessTest.Ursa.Controls.DateTimePickerMainTests;
@@ -104,6 +105,9 @@ public class Tests
         window.Show();
         
         dateTimePicker.Focus();
-        Assert.True(dateTimePicker.IsFocused);
+        Assert.False(dateTimePicker.IsFocused);
+        var textbox = dateTimePicker.GetVisualDescendants().OfType<TextBox>().FirstOrDefault();
+        Assert.NotNull(textbox);
+        Assert.True(textbox.IsFocused);
     }
 }
